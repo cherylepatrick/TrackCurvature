@@ -73,7 +73,6 @@ TrackCurvature::process(datatools::things& workItem) {
   std::vector<int> trackCharges;
   std::vector<int> electronHitCounts;
 
-  
 // Number of particle tracks PTD databank
   try
   {
@@ -81,11 +80,27 @@ TrackCurvature::process(datatools::things& workItem) {
 
    if (trackData.hasParticles ())
     {
-
       const snemo::datamodel::ParticleHdlCollection particles = trackData.particles();
       for (snemo::datamodel::ParticleHdlCollection::const_iterator   iParticle = particles.begin(); iParticle != particles.end(); ++iParticle) {
         const snemo::datamodel::particle_track& track = iParticle->get();
-      }
+        int charge=(int)track.get_charge();
+
+          if (charge== snemo::datamodel::particle_track::NEUTRAL)
+          continue; // Not interested in gammas right now
+        
+          // It's a charged particle track
+          trackCount++;
+
+          if (charge== snemo::datamodel::particle_track::UNDEFINED)
+          { // straight track
+            trackCharges.push_back(0);
+            trackCurvatures.push_back(0);
+            continue;
+          }
+          if (charge==snemo::datamodel::particle_track::POSITIVE)
+              trackCharges.push_back(1);
+          else trackCharges.push_back(-1);
+        }
     }
   }
   catch (std::logic_error& e) {
