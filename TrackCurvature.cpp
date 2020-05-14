@@ -53,8 +53,8 @@ void TrackCurvature::initialize(const datatools::properties& myConfig,
   tree_->Branch("reco.track_curvatures",&trackdetails_.track_curvatures_);
   tree_->Branch("reco.track_charges",&trackdetails_.track_charges_);
   tree_->Branch("reco.electron_energies",&trackdetails_.electron_energies_);
-  tree_->Branch("reco.electron_track_lengths", &trackdetails_.electron_track_lengths_);
-  tree_->Branch("reco.electron_hit_counts",&trackdetails_.electron_hit_counts_);
+  tree_->Branch("reco.track_lengths", &trackdetails_.track_lengths_);
+  tree_->Branch("reco.track_hit_counts",&trackdetails_.track_hit_counts_);
 
   this->_set_initialized(true);
 }
@@ -68,10 +68,10 @@ TrackCurvature::process(datatools::things& workItem) {
   std::vector<snemo::datamodel::particle_track> electronCandidates;
   std::vector<double> electronEnergies;
   std::vector<int> electronCharges;
-  std::vector<double> electronTrackLengths;
+  std::vector<double> trackLengths;
   std::vector<double> trackCurvatures;
   std::vector<int> trackCharges;
-  std::vector<int> electronHitCounts;
+  std::vector<int> trackHitCounts;
 
 // Number of particle tracks PTD databank
   try
@@ -91,6 +91,13 @@ TrackCurvature::process(datatools::things& workItem) {
           // It's a charged particle track
           trackCount++;
 
+        // Get the track length and number of hits
+        const snemo::datamodel::tracker_trajectory & the_trajectory = track.get_trajectory();
+        const snemo::datamodel::tracker_cluster & the_cluster = the_trajectory.get_cluster();
+        trackHitCounts.push_back(the_cluster.size());
+
+        trackLengths.push_back( the_trajectory.get_pattern().get_shape().get_length());
+        // get the charge
           if (charge== snemo::datamodel::particle_track::UNDEFINED)
           { // straight track
             trackCharges.push_back(0);
@@ -112,8 +119,8 @@ TrackCurvature::process(datatools::things& workItem) {
   ResetVars();
 
 
-  trackdetails_.electron_track_lengths_=electronTrackLengths;
-  trackdetails_.electron_hit_counts_=electronHitCounts;
+  trackdetails_.track_lengths_=trackLengths;
+  trackdetails_.track_hit_counts_=trackHitCounts;
   trackdetails_.electron_charges_=electronCharges;
   trackdetails_.track_charges_=trackCharges;
   trackdetails_.track_curvatures_=trackCurvatures;
@@ -133,10 +140,10 @@ TrackCurvature::process(datatools::things& workItem) {
 void TrackCurvature::ResetVars()
 {
   // clear out all the vectors or they persist between events
-    trackdetails_.electron_track_lengths_.clear();
+    trackdetails_.track_lengths_.clear();
     trackdetails_.electron_charges_.clear();
     trackdetails_.track_charges_.clear();
-    trackdetails_.electron_hit_counts_.clear();
+    trackdetails_.track_hit_counts_.clear();
     trackdetails_.electron_energies_.clear();
     trackdetails_.track_curvatures_.clear();
     trackdetails_.track_count_=0;
