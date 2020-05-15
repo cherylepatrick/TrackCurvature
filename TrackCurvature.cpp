@@ -95,19 +95,29 @@ TrackCurvature::process(datatools::things& workItem) {
         const snemo::datamodel::tracker_trajectory & the_trajectory = track.get_trajectory();
         const snemo::datamodel::tracker_cluster & the_cluster = the_trajectory.get_cluster();
         trackHitCounts.push_back(the_cluster.size());
-
         trackLengths.push_back( the_trajectory.get_pattern().get_shape().get_length());
+        
+        const snemo::datamodel::base_trajectory_pattern & the_base_pattern = the_trajectory.get_pattern();
+        if (the_base_pattern.get_pattern_id()=="helix")
+        {
+            const geomtools::helix_3d & the_shape = (const geomtools::helix_3d&)the_base_pattern.get_shape();
+          trackCurvatures.push_back(the_shape.get_radius());
+        }
+        else
+          trackCurvatures.push_back(-9999); // it isn't a helical track
         // get the charge
           if (charge== snemo::datamodel::particle_track::UNDEFINED)
           { // straight track
             trackCharges.push_back(0);
-            trackCurvatures.push_back(0);
             continue;
           }
           if (charge==snemo::datamodel::particle_track::POSITIVE)
               trackCharges.push_back(1);
           else trackCharges.push_back(-1);
-        }
+        // I can't figure out how to check if it is actually a helix *sigh* so for now let's just assume it is
+        // Find the radius of curvature
+         // trackCurvatures.push_back(the_trajectory.get_pattern().get_radius();
+      }
     }
   }
   catch (std::logic_error& e) {
