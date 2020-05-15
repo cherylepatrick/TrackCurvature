@@ -117,6 +117,12 @@ TrackCurvature::process(datatools::things& workItem) {
         else
           trackCurvatures.push_back(-9999); // it isn't a helical track
         
+        if (electronlike)
+        {
+          // Because I am in a hurry I am assuming we don't have calo to calo tracks and am just taking the first hit. But if I had more time I would check there is only 1 hit
+          const snemo::datamodel::calibrated_calorimeter_hit & calo_hit = track.get_associated_calorimeter_hits().at(0).get();
+            electronEnergies.push_back(calo_hit.get_energy());
+        }
         // get the charge
           if (charge== snemo::datamodel::particle_track::UNDEFINED)
           { // straight track
@@ -134,6 +140,7 @@ TrackCurvature::process(datatools::things& workItem) {
               trackCharges.push_back(-1);
               if (electronlike)electronCharges.push_back(-1);
           }
+          
       }
     }
   }
