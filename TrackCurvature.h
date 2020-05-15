@@ -43,6 +43,7 @@ typedef struct TrackEventStorage{
   std::vector<double> track_lengths_;
   std::vector<int> track_hit_counts_;
   std::vector<double> track_curvatures_;
+  std::vector<bool> is_electron_;
   int track_count_; // How many reconstructed tracks?
   int electron_count_; // How many reconstructed electrons?
 

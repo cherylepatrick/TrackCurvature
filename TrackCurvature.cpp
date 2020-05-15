@@ -55,6 +55,7 @@ void TrackCurvature::initialize(const datatools::properties& myConfig,
   tree_->Branch("reco.electron_energies",&trackdetails_.electron_energies_);
   tree_->Branch("reco.track_lengths", &trackdetails_.track_lengths_);
   tree_->Branch("reco.track_hit_counts",&trackdetails_.track_hit_counts_);
+  tree_->Branch("reco.is_electron",&trackdetails_.is_electron_);
 
   this->_set_initialized(true);
 }
@@ -62,7 +63,7 @@ void TrackCurvature::initialize(const datatools::properties& myConfig,
 dpp::base_module::process_status
 TrackCurvature::process(datatools::things& workItem) {
   
-
+  std::vector<bool>isElectron;
   uint electronCount=0;
   int trackCount=0;
   std::vector<snemo::datamodel::particle_track> electronCandidates;
@@ -85,17 +86,27 @@ TrackCurvature::process(datatools::things& workItem) {
         const snemo::datamodel::particle_track& track = iParticle->get();
         int charge=(int)track.get_charge();
 
-          if (charge== snemo::datamodel::particle_track::NEUTRAL)
+        if (charge== snemo::datamodel::particle_track::NEUTRAL)
           continue; // Not interested in gammas right now
         
-          // It's a charged particle track
-          trackCount++;
-
+        // It's a charged particle track
+        trackCount++;
+        
         // Get the track length and number of hits
         const snemo::datamodel::tracker_trajectory & the_trajectory = track.get_trajectory();
         const snemo::datamodel::tracker_cluster & the_cluster = the_trajectory.get_cluster();
         trackHitCounts.push_back(the_cluster.size());
         trackLengths.push_back( the_trajectory.get_pattern().get_shape().get_length());
+        // Identify electron-like tracks (not delayed and hit a calorimeter)
+        bool electronlike=false;
+        
+        if (the_cluster.is_delayed()<=0 && track.has_associated_calorimeter_hits())
+        {
+          electronlike=true;
+          electronCount++;
+          isElectron.push_back(true);
+        }
+        else isElectron.push_back(false);
         
         const snemo::datamodel::base_trajectory_pattern & the_base_pattern = the_trajectory.get_pattern();
         if (the_base_pattern.get_pattern_id()=="helix")
@@ -105,18 +116,24 @@ TrackCurvature::process(datatools::things& workItem) {
         }
         else
           trackCurvatures.push_back(-9999); // it isn't a helical track
+        
         // get the charge
           if (charge== snemo::datamodel::particle_track::UNDEFINED)
           { // straight track
             trackCharges.push_back(0);
+            if (electronlike)electronCharges.push_back(0);
             continue;
           }
           if (charge==snemo::datamodel::particle_track::POSITIVE)
+          {
               trackCharges.push_back(1);
-          else trackCharges.push_back(-1);
-        // I can't figure out how to check if it is actually a helix *sigh* so for now let's just assume it is
-        // Find the radius of curvature
-         // trackCurvatures.push_back(the_trajectory.get_pattern().get_radius();
+              if (electronlike)electronCharges.push_back(1);
+          }
+          else
+          {
+              trackCharges.push_back(-1);
+              if (electronlike)electronCharges.push_back(-1);
+          }
       }
     }
   }
@@ -137,6 +154,7 @@ TrackCurvature::process(datatools::things& workItem) {
   trackdetails_.electron_energies_=electronEnergies;
   trackdetails_.track_count_=trackCount;
   trackdetails_.electron_count_=electronCount;
+  trackdetails_.is_electron_=isElectron;
 
 //
 
@@ -158,6 +176,7 @@ void TrackCurvature::ResetVars()
     trackdetails_.track_curvatures_.clear();
     trackdetails_.track_count_=0;
     trackdetails_.electron_count_=0;
+    trackdetails_.is_electron_.clear();
   
 }
 
